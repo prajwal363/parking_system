@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ParkEase — Parking Slots</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav>
+    <span class="logo">🅿 ParkEase</span>
+    <a href="/">Dashboard</a>
+    <a href="/slots">Slots</a>
+    <a href="/book">Book Slot</a>
+    <a href="/active">Active</a>
+    <a href="/logs">Logs</a>
+  </nav>
+
+  <main>
+    <h1>All Parking Slots</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Slot Number</th>
+          <th>Type</th>
+          <th>Floor</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slot in slots %}
+        <tr>
+          <td><strong>{{ slot.slot_number }}</strong></td>
+          <td>{{ slot.slot_type | capitalize }}</td>
+          <td>Floor {{ slot.floor }}</td>
+          <td>
+            {% if slot.is_available %}
+              <span class="badge-avail">Available</span>
+            {% else %}
+              <span class="badge-occ">Occupied</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

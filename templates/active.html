@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkEase — Active Bookings</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav>
+    <span class="logo">🅿 ParkEase</span>
+    <a href="/">Dashboard</a>
+    <a href="/slots">Slots</a>
+    <a href="/book">Book Slot</a>
+    <a href="/active">Active</a>
+    <a href="/logs">Logs</a>
+  </nav>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <h1>Active Bookings</h1>
+
+    {% if bookings|length == 0 %}
+      <div class="alert info">No active bookings right now.</div>
+    {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>Booking ID</th>
+          <th>Owner</th>
+          <th>License Plate</th>
+          <th>Vehicle Type</th>
+          <th>Slot</th>
+          <th>Floor</th>
+          <th>Entry Time</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+        <tr>
+          <td>#{{ b.booking_id }}</td>
+          <td>{{ b.owner_name }}</td>
+          <td><strong>{{ b.license_plate }}</strong></td>
+          <td>{{ b.vehicle_type | capitalize }}</td>
+          <td>{{ b.slot_number }}</td>
+          <td>Floor {{ b.floor }}</td>
+          <td>{{ b.entry_time }}</td>
+          <td>
+            <form method="POST" action="/release/{{ b.booking_id }}"
+                  onsubmit="return confirm('Release slot for {{ b.license_plate }}? Fee will be calculated.')">
+              <button type="submit" class="btn-release">Release</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </main>
+</body>
+</html>

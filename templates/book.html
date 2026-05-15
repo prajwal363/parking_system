@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkEase — Book a Slot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav>
+    <span class="logo">&#x1F17F; ParkEase</span>
+    <a href="/">Dashboard</a>
+    <a href="/slots">Slots</a>
+    <a href="/book">Book Slot</a>
+    <a href="/active">Active</a>
+    <a href="/logs">Logs</a>
+  </nav>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h1>Book a Parking Slot</h1>
+
+    {% if slots is not none %}
+      {% if slots | length > 0 %}
+
+        <form method="POST" action="/book">
+
+          <label>Owner Name</label>
+          <input type="text" name="owner_name" placeholder="e.g. Arjun Kumar" required>
+
+          <label>License Plate</label>
+          <input type="text" name="license_plate" placeholder="e.g. KA01AB1234" required>
+
+          <label>Vehicle Type</label>
+          <select name="vehicle_type" id="vehicle_type" onchange="filterSlots()">
+            <option value="car">Car</option>
+            <option value="bike">Bike</option>
+            <option value="truck">Truck</option>
+          </select>
+
+          <label>Contact Number</label>
+          <input type="text" name="contact" placeholder="e.g. 9876543210">
+
+          <label>Available Slot</label>
+          <select name="slot_id" id="slot_select">
+            {% for slot in slots %}
+            <option value="{{ slot.slot_id }}" data-type="{{ slot.slot_type }}">
+              {{ slot.slot_number }} &mdash; {{ slot.slot_type | capitalize }} &mdash; Floor {{ slot.floor }}
+            </option>
+            {% endfor %}
+          </select>
+
+          <button type="submit">Book Slot</button>
+        </form>
+
+        <script>
+          function filterSlots() {
+            var type = document.getElementById('vehicle_type').value;
+            var sel  = document.getElementById('slot_select');
+            var opts = sel.options;
+            var firstVisible = true;
+            for (var i = 0; i < opts.length; i++) {
+              if (opts[i].getAttribute('data-type') === type) {
+                opts[i].style.display = '';
+                if (firstVisible) {
+                  sel.selectedIndex = i;
+                  firstVisible = false;
+                }
+              } else {
+                opts[i].style.display = 'none';
+              }
+            }
+          }
+          window.onload = filterSlots;
+        </script>
+
+      {% else %}
+        <div class="alert info">
+          No available slots at the moment. Please check back later.
+        </div>
+      {% endif %}
+    {% endif %}
+  </main>
+</body>
+</html>

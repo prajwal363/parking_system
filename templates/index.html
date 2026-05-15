@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkEase — Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav>
+    <span class="logo">🅿 ParkEase</span>
+    <a href="/">Dashboard</a>
+    <a href="/slots">Slots</a>
+    <a href="/book">Book Slot</a>
+    <a href="/active">Active</a>
+    <a href="/logs">Logs</a>
+  </nav>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <h1>Dashboard</h1>
+    <div class="cards">
+      <div class="card">
+        <p class="label">Total Slots</p>
+        <p class="value">{{ total_slots }}</p>
+      </div>
+      <div class="card">
+        <p class="label">Available</p>
+        <p class="value green">{{ available }}</p>
+      </div>
+      <div class="card">
+        <p class="label">Active Bookings</p>
+        <p class="value blue">{{ active_book }}</p>
+      </div>
+      <div class="card">
+        <p class="label">Total Revenue (₹)</p>
+        <p class="value amber">{{ revenue }}</p>
+      </div>
+    </div>
+
+    <div class="quick-links">
+      <a href="/book" class="btn">+ Book a Slot</a>
+      <a href="/active" class="btn btn-outline">View Active Bookings</a>
+    </div>
+  </main>
+</body>
+</html>
