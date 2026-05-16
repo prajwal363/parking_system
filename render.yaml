@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: parkease
+    env: python
+    buildCommand: "pip install -r requirements.txt && python init_db.py"
+    startCommand: "gunicorn app:app"
