@@ -8,7 +8,7 @@
 </head>
 <body>
   <nav>
-    <span class="logo">🅿 ParkEase</span>
+    <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
     <a href="/">Dashboard</a>
     <a href="/slots">Slots</a>
     <a href="/book">Book Slot</a>
@@ -18,49 +18,73 @@
 
   <main>
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="alert {{ category }}">{{ message }}</div>
-      {% endfor %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
     {% endwith %}
 
-    <h1>Active Bookings</h1>
+    <div class="page-header">
+      <h1>Active Bookings</h1>
+      <p>Currently parked vehicles — click Release to checkout</p>
+    </div>
 
     {% if bookings|length == 0 %}
-      <div class="alert info">No active bookings right now.</div>
+    <div class="section-card">
+      <div class="empty-state">
+        <div class="ei">&#128663;</div>
+        <p>No active bookings right now.<br>
+        <a href="/book" style="color:var(--accent);text-decoration:none;font-weight:600;">Book a slot &rarr;</a></p>
+      </div>
+    </div>
     {% else %}
-    <table>
-      <thead>
-        <tr>
-          <th>Booking ID</th>
-          <th>Owner</th>
-          <th>License Plate</th>
-          <th>Vehicle Type</th>
-          <th>Slot</th>
-          <th>Floor</th>
-          <th>Entry Time</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for b in bookings %}
-        <tr>
-          <td>#{{ b.booking_id }}</td>
-          <td>{{ b.owner_name }}</td>
-          <td><strong>{{ b.license_plate }}</strong></td>
-          <td>{{ b.vehicle_type | capitalize }}</td>
-          <td>{{ b.slot_number }}</td>
-          <td>Floor {{ b.floor }}</td>
-          <td>{{ b.entry_time }}</td>
-          <td>
-            <form method="POST" action="/release/{{ b.booking_id }}"
-                  onsubmit="return confirm('Release slot for {{ b.license_plate }}? Fee will be calculated.')">
-              <button type="submit" class="btn-release">Release</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="section-card">
+      <div class="section-card-header">
+        <h2>Live Bookings</h2>
+        <p>{{ bookings|length }} vehicle(s) currently parked</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#ID</th>
+              <th>Owner</th>
+              <th>License Plate</th>
+              <th>Type</th>
+              <th>Slot</th>
+              <th>Floor</th>
+              <th>Entry Time</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bookings %}
+            <tr>
+              <td><span class="td-id">#{{ b.booking_id }}</span></td>
+              <td><span class="td-name">{{ b.owner_name }}</span></td>
+              <td><span class="td-mono">{{ b.license_plate }}</span></td>
+              <td>
+                {% if b.vehicle_type == 'car' %}&#128663;
+                {% elif b.vehicle_type == 'bike' %}&#128690;
+                {% else %}&#128666;{% endif %}
+                {{ b.vehicle_type | capitalize }}
+              </td>
+              <td><strong>{{ b.slot_number }}</strong></td>
+              <td><span class="td-dim">Floor {{ b.floor }}</span></td>
+              <td><span class="td-dim">{{ b.entry_time }}</span></td>
+              <td>
+                <form method="POST" action="/release/{{ b.booking_id }}"
+                      onsubmit="return confirm('Release slot for {{ b.license_plate }}?\nFee will be calculated at Rs.50/hr.')">
+                  <button type="submit" class="btn-release">&#10003; Release</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
     {% endif %}
   </main>
 </body>

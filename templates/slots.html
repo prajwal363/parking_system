@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ParkEase — Parking Slots</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <nav>
-    <span class="logo">🅿 ParkEase</span>
+    <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
     <a href="/">Dashboard</a>
     <a href="/slots">Slots</a>
     <a href="/book">Book Slot</a>
@@ -16,33 +17,41 @@
   </nav>
 
   <main>
-    <h1>All Parking Slots</h1>
-    <table>
-      <thead>
-        <tr>
-          <th>Slot Number</th>
-          <th>Type</th>
-          <th>Floor</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div class="page-header">
+      <h1>Parking Slots</h1>
+      <p>Live availability across all floors</p>
+    </div>
+
+    <div class="slot-legend">
+      <span class="legend-item"><span class="legend-dot green"></span> Available</span>
+      <span class="legend-item"><span class="legend-dot red"></span> Occupied</span>
+    </div>
+
+    <div class="section-card" style="margin-top:16px;">
+      <div class="section-card-header">
+        <h2>All Slots</h2>
+        <p>{{ slots|length }} total</p>
+      </div>
+      <div class="slot-grid">
         {% for slot in slots %}
-        <tr>
-          <td><strong>{{ slot.slot_number }}</strong></td>
-          <td>{{ slot.slot_type | capitalize }}</td>
-          <td>Floor {{ slot.floor }}</td>
-          <td>
-            {% if slot.is_available %}
-              <span class="badge-avail">Available</span>
-            {% else %}
-              <span class="badge-occ">Occupied</span>
-            {% endif %}
-          </td>
-        </tr>
+        <div class="slot-item {{ 'available' if slot.is_available else 'occupied' }}">
+          <div class="slot-icon">
+            {% if slot.slot_type == 'car' %}&#128663;
+            {% elif slot.slot_type == 'bike' %}&#128690;
+            {% else %}&#128666;{% endif %}
+          </div>
+          <div class="slot-num">{{ slot.slot_number }}</div>
+          <div class="slot-type-label">{{ slot.slot_type | capitalize }}</div>
+          <div class="slot-floor-label">Floor {{ slot.floor }}</div>
+          {% if slot.is_available %}
+            <span class="badge badge-avail">Free</span>
+          {% else %}
+            <span class="badge badge-occ">Occupied</span>
+          {% endif %}
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
   </main>
 </body>
 </html>

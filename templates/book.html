@@ -8,7 +8,7 @@
 </head>
 <body>
   <nav>
-    <span class="logo">&#x1F17F; ParkEase</span>
+    <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
     <a href="/">Dashboard</a>
     <a href="/slots">Slots</a>
     <a href="/book">Book Slot</a>
@@ -25,40 +25,84 @@
       {% endif %}
     {% endwith %}
 
-    <h1>Book a Parking Slot</h1>
+    <div class="page-header">
+      <h1>Book a Slot</h1>
+      <p>Reserve a parking spot for your vehicle</p>
+    </div>
 
-    {% if slots is not none %}
-      {% if slots | length > 0 %}
+    <div class="book-layout">
+      {% if slots is not none %}
+        {% if slots|length > 0 %}
+        <div class="form-card">
+          <form method="POST" action="/book">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Owner Name</label>
+                <input type="text" name="owner_name" placeholder="e.g. Arjun Kumar" required>
+              </div>
+              <div class="form-group">
+                <label>Contact Number</label>
+                <input type="text" name="contact" placeholder="e.g. 9876543210">
+              </div>
+              <div class="form-group">
+                <label>License Plate</label>
+                <input type="text" name="license_plate" placeholder="e.g. KA01AB1234" required>
+              </div>
+              <div class="form-group">
+                <label>Vehicle Type</label>
+                <select name="vehicle_type" id="vehicle_type" onchange="filterSlots()">
+                  <option value="car">&#128663; Car</option>
+                  <option value="bike">&#128690; Bike</option>
+                  <option value="truck">&#128666; Truck</option>
+                </select>
+              </div>
+              <div class="form-group full">
+                <label>Select Available Slot</label>
+                <select name="slot_id" id="slot_select">
+                  {% for slot in slots %}
+                  <option value="{{ slot.slot_id }}" data-type="{{ slot.slot_type }}">
+                    {{ slot.slot_number }} &mdash; {{ slot.slot_type | capitalize }} &mdash; Floor {{ slot.floor }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="submit-btn">Confirm Booking &rarr;</button>
+          </form>
+        </div>
 
-        <form method="POST" action="/book">
+        <div class="book-side">
+          <div class="section-card">
+            <div class="section-card-header"><h2>Rate Card</h2></div>
+            <div class="rate-list">
+              <div class="rate-item">
+                <span class="rate-icon">&#128663;</span>
+                <div><div class="rate-type">Car</div><div class="rate-val">&#8377;50 / hour</div></div>
+              </div>
+              <div class="rate-item">
+                <span class="rate-icon">&#128690;</span>
+                <div><div class="rate-type">Bike</div><div class="rate-val">&#8377;20 / hour</div></div>
+              </div>
+              <div class="rate-item">
+                <span class="rate-icon">&#128666;</span>
+                <div><div class="rate-type">Truck</div><div class="rate-val">&#8377;100 / hour</div></div>
+              </div>
+            </div>
+          </div>
 
-          <label>Owner Name</label>
-          <input type="text" name="owner_name" placeholder="e.g. Arjun Kumar" required>
-
-          <label>License Plate</label>
-          <input type="text" name="license_plate" placeholder="e.g. KA01AB1234" required>
-
-          <label>Vehicle Type</label>
-          <select name="vehicle_type" id="vehicle_type" onchange="filterSlots()">
-            <option value="car">Car</option>
-            <option value="bike">Bike</option>
-            <option value="truck">Truck</option>
-          </select>
-
-          <label>Contact Number</label>
-          <input type="text" name="contact" placeholder="e.g. 9876543210">
-
-          <label>Available Slot</label>
-          <select name="slot_id" id="slot_select">
-            {% for slot in slots %}
-            <option value="{{ slot.slot_id }}" data-type="{{ slot.slot_type }}">
-              {{ slot.slot_number }} &mdash; {{ slot.slot_type | capitalize }} &mdash; Floor {{ slot.floor }}
-            </option>
-            {% endfor %}
-          </select>
-
-          <button type="submit">Book Slot</button>
-        </form>
+          <div class="section-card" style="margin-top:16px;">
+            <div class="section-card-header"><h2>Available Slots</h2></div>
+            <div class="mini-slot-list">
+              {% for slot in slots %}
+              <div class="mini-slot" data-type="{{ slot.slot_type }}">
+                <span class="mini-slot-num">{{ slot.slot_number }}</span>
+                <span class="mini-slot-type">{{ slot.slot_type }}</span>
+                <span class="mini-slot-floor">F{{ slot.floor }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
 
         <script>
           function filterSlots() {
@@ -69,24 +113,27 @@
             for (var i = 0; i < opts.length; i++) {
               if (opts[i].getAttribute('data-type') === type) {
                 opts[i].style.display = '';
-                if (firstVisible) {
-                  sel.selectedIndex = i;
-                  firstVisible = false;
-                }
+                if (firstVisible) { sel.selectedIndex = i; firstVisible = false; }
               } else {
                 opts[i].style.display = 'none';
               }
+            }
+            var minis = document.querySelectorAll('.mini-slot');
+            for (var j = 0; j < minis.length; j++) {
+              minis[j].style.opacity = minis[j].getAttribute('data-type') === type ? '1' : '0.25';
             }
           }
           window.onload = filterSlots;
         </script>
 
-      {% else %}
-        <div class="alert info">
-          No available slots at the moment. Please check back later.
+        {% else %}
+        <div class="empty-state">
+          <div class="ei">&#128663;</div>
+          <p>No available slots at the moment.<br>Please check back later.</p>
         </div>
+        {% endif %}
       {% endif %}
-    {% endif %}
+    </div>
   </main>
 </body>
 </html>

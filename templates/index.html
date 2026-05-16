@@ -8,7 +8,7 @@
 </head>
 <body>
   <nav>
-    <span class="logo">🅿 ParkEase</span>
+    <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
     <a href="/">Dashboard</a>
     <a href="/slots">Slots</a>
     <a href="/book">Book Slot</a>
@@ -18,35 +18,159 @@
 
   <main>
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="alert {{ category }}">{{ message }}</div>
-      {% endfor %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
     {% endwith %}
 
-    <h1>Dashboard</h1>
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Real-time overview of your parking facility</p>
+    </div>
+
     <div class="cards">
       <div class="card">
+        <div class="card-icon">&#127358;</div>
         <p class="label">Total Slots</p>
-        <p class="value">{{ total_slots }}</p>
+        <p class="value"><span class="num">{{ total_slots }}</span></p>
+        <p class="card-sub">parking spaces</p>
       </div>
       <div class="card">
+        <div class="card-icon">&#9989;</div>
         <p class="label">Available</p>
-        <p class="value green">{{ available }}</p>
+        <p class="value green"><span class="num">{{ available }}</span></p>
+        <p class="card-sub">slots free now</p>
       </div>
       <div class="card">
+        <div class="card-icon">&#128663;</div>
         <p class="label">Active Bookings</p>
-        <p class="value blue">{{ active_book }}</p>
+        <p class="value blue"><span class="num">{{ active_book }}</span></p>
+        <p class="card-sub">vehicles parked</p>
       </div>
       <div class="card">
-        <p class="label">Total Revenue (₹)</p>
-        <p class="value amber">{{ revenue }}</p>
+        <div class="card-icon">&#8377;</div>
+        <p class="label">Total Revenue</p>
+        <p class="value amber"><span class="num">{{ revenue }}</span></p>
+        <p class="card-sub">rupees earned</p>
       </div>
     </div>
 
     <div class="quick-links">
-      <a href="/book" class="btn">+ Book a Slot</a>
+      <a href="/book" class="btn">&#43; Book a Slot</a>
       <a href="/active" class="btn btn-outline">View Active Bookings</a>
+      <a href="/slots" class="btn btn-outline">Slot Overview</a>
+    </div>
+
+    <div class="dash-bottom">
+      <div class="section-card info-card">
+        <div class="section-card-header">
+          <h2>System Info</h2>
+        </div>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="info-label">Occupied Slots</span>
+            <span class="info-val red-text">{{ total_slots - available }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Occupancy Rate</span>
+            <span class="info-val">
+              {% if total_slots > 0 %}
+                {{ ((total_slots - available) / total_slots * 100) | round(1) }}%
+              {% else %}0%{% endif %}
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Rate (Car)</span>
+            <span class="info-val">&#8377;50 / hr</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Rate (Bike)</span>
+            <span class="info-val">&#8377;20 / hr</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Rate (Truck)</span>
+            <span class="info-val">&#8377;100 / hr</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card trigger-card">
+        <div class="section-card-header">
+          <h2>DB Triggers Active</h2>
+        </div>
+        <div class="trigger-list">
+          <div class="trigger-item">
+            <span class="trigger-dot"></span>
+            <div>
+              <div class="trigger-name">update_slot_on_booking</div>
+              <div class="trigger-desc">Marks slot occupied on INSERT</div>
+            </div>
+          </div>
+          <div class="trigger-item">
+            <span class="trigger-dot"></span>
+            <div>
+              <div class="trigger-name">update_slot_on_release</div>
+              <div class="trigger-desc">Marks slot free on UPDATE</div>
+            </div>
+          </div>
+          <div class="trigger-item">
+            <span class="trigger-dot"></span>
+            <div>
+              <div class="trigger-name">log_new_booking</div>
+              <div class="trigger-desc">Auto-logs every new booking</div>
+            </div>
+          </div>
+          <div class="trigger-item">
+            <span class="trigger-dot"></span>
+            <div>
+              <div class="trigger-name">log_booking_release</div>
+              <div class="trigger-desc">Auto-logs every slot release</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
+
+  <script>
+    document.querySelectorAll('.card').forEach(function(card) {
+      card.addEventListener('mousemove', function(e) {
+        var rect = card.getBoundingClientRect();
+        var x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
+        var y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
+        card.style.setProperty('--mx', x + '%');
+        card.style.setProperty('--my', y + '%');
+      });
+      card.addEventListener('mouseleave', function() {
+        card.style.setProperty('--mx', '50%');
+        card.style.setProperty('--my', '50%');
+      });
+
+      /* number count-up on first hover */
+      card.addEventListener('mouseenter', function() {
+        var numEl = card.querySelector('.num');
+        if (!numEl || numEl.dataset.animated) return;
+        numEl.dataset.animated = '1';
+        var target = parseFloat(numEl.textContent.replace(/[^0-9.]/g,''));
+        if (isNaN(target) || target === 0) return;
+        var start = 0;
+        var duration = 600;
+        var startTime = null;
+        function step(ts) {
+          if (!startTime) startTime = ts;
+          var progress = Math.min((ts - startTime) / duration, 1);
+          var ease = 1 - Math.pow(1 - progress, 3);
+          var current = Math.round(ease * target * 10) / 10;
+          numEl.textContent = Number.isInteger(target) ? Math.round(current) : current.toFixed(1);
+          if (progress < 1) requestAnimationFrame(step);
+          else numEl.textContent = numEl.dataset.original;
+        }
+        numEl.dataset.original = numEl.textContent;
+        requestAnimationFrame(step);
+      });
+    });
+  </script>
 </body>
 </html>
