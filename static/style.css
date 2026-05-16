@@ -451,33 +451,30 @@ select option { background: var(--bg3); color: var(--text); }
   display: none;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   gap: 5px;
-  width: 36px; height: 36px;
+  width: 40px; height: 40px;
   background: transparent;
   border: 1px solid var(--border2);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  padding: 8px;
-  transition: background 0.2s;
-  margin-left: auto;
+  padding: 0;
+  flex-shrink: 0;
 }
-.nav-toggle:hover { background: rgba(255,255,255,0.06); }
 .nav-toggle span {
   display: block;
-  width: 100%; height: 2px;
-  background: var(--text-dim);
+  width: 18px; height: 2px;
+  background: var(--text);
   border-radius: 2px;
-  transition: transform 0.3s, opacity 0.3s, width 0.3s;
-  transform-origin: center;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
-/* X state */
 .nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.nav-toggle.open span:nth-child(2) { opacity: 0; width: 0; }
+.nav-toggle.open span:nth-child(2) { opacity: 0; }
 .nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-#nav-menu { display: flex; align-items: center; gap: 4px; }
-
 @media (max-width: 680px) {
+  nav { padding: 0 16px; position: relative; }
+
   .nav-toggle { display: flex; }
 
   #nav-menu {
@@ -485,55 +482,38 @@ select option { background: var(--bg3); color: var(--text); }
     position: absolute;
     top: 62px; left: 0; right: 0;
     background: rgba(10,10,15,0.98);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     flex-direction: column;
     align-items: stretch;
-    gap: 0;
-    padding: 8px 16px 16px;
-    z-index: 99;
-    animation: none;
+    padding: 8px 12px 16px;
+    gap: 4px;
+    z-index: 999;
   }
   #nav-menu.open {
     display: flex;
-    animation: menuSlide 0.25s cubic-bezier(.22,.68,0,1.2);
+    animation: menuDrop 0.25s ease;
   }
-  @keyframes menuSlide {
-    from { opacity: 0; transform: translateY(-8px); }
+  @keyframes menuDrop {
+    from { opacity: 0; transform: translateY(-10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   #nav-menu a {
-    padding: 13px 12px;
+    padding: 13px 14px;
     font-size: 0.95rem;
     border-radius: var(--radius-sm);
-    border-bottom: 1px solid var(--border);
     color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    display: block;
   }
   #nav-menu a:last-child { border-bottom: none; }
   #nav-menu a:hover { background: rgba(255,255,255,0.05); color: var(--text); }
 
-  /* fix nav layout for mobile */
-  nav { position: relative; }
-  .logo { margin-right: 0; }
-
-  /* stack cards 2 per row on mobile */
   .cards { grid-template-columns: repeat(2, 1fr); }
-
-  /* book layout single col */
   .book-layout { grid-template-columns: 1fr; }
-  .form-card { padding: 24px 20px; }
+  .form-card { padding: 24px 20px; max-width: 100%; }
   .form-grid { grid-template-columns: 1fr; }
-
-  /* main padding */
   main { padding: 28px 16px 60px; }
-
-  /* slot grid smaller */
   .slot-grid { grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; padding: 14px; }
-
-  /* table scroll */
   .table-wrap { overflow-x: auto; }
-
-  /* dash bottom single col */
   .dash-bottom { grid-template-columns: 1fr; }
 }
