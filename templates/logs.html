@@ -4,16 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ParkEase — Audit Logs</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
+  <script defer src="{{ url_for('static', filename='nav.js') }}?v=3"></script>
 </head>
 <body>
   <nav>
     <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
-    <a href="/">Dashboard</a>
-    <a href="/slots">Slots</a>
-    <a href="/book">Book Slot</a>
-    <a href="/active">Active</a>
-    <a href="/logs">Logs</a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div id="nav-menu">
+      <a href="/">Dashboard</a>
+      <a href="/slots">Slots</a>
+      <a href="/book">Book Slot</a>
+      <a href="/active">Active</a>
+      <a href="/logs">Logs</a>
+    </div>
   </nav>
 
   <main>
