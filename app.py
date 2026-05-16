@@ -38,7 +38,7 @@ def index():
 def slots():
     try:
         db = get_db()
-        all_slots = db.execute("SELECT * FROM parking_slots ORDER BY slot_type, slot_number").fetchall()
+        all_slots = db.execute("SELECT * FROM parking_slots ORDER BY slot_type, SUBSTR(slot_number,1,1), CAST(SUBSTR(slot_number,2) AS INTEGER)").fetchall()
         db.close()
         return render_template('slots.html', slots=all_slots)
     except Exception as e:
@@ -99,7 +99,7 @@ def book():
             return redirect(url_for('active_bookings'))
 
         avail_slots = db.execute(
-            "SELECT * FROM available_slots_view ORDER BY slot_type, slot_number").fetchall()
+            "SELECT * FROM available_slots_view ORDER BY slot_type, SUBSTR(slot_number,1,1), CAST(SUBSTR(slot_number,2) AS INTEGER)").fetchall()
         db.close()
         return render_template('book.html', slots=avail_slots)
     except Exception as e:
