@@ -119,15 +119,15 @@ GROUP BY DATE(exit_time);
 -- ─────────────────────────────────────────
 --  SAMPLE DATA
 -- ─────────────────────────────────────────
-INSERT INTO parking_slots (slot_number, slot_type, floor) VALUES
-  ('A1','car',1), ('A2','car',1), ('A3','car',1), ('A4','car',2), ('A5','car',2),
-  ('B1','bike',1),('B2','bike',1),('B3','bike',1),
-  ('C1','truck',2),('C2','truck',2);
+INSERT OR IGNORE INTO parking_slots (slot_number, slot_type, floor) VALUES
+  ('A1','car',1),('A2','car',1),('A3','car',1),('A4','car',1),('A5','car',1),
+  ('A6','car',2),('A7','car',2),('A8','car',3),('A9','car',3),('A10','car',3),
+  ('B1','bike',1),('B2','bike',1),('B3','bike',1),('B4','bike',1),('B5','bike',1),
+  ('B6','bike',2),('B7','bike',2),('B8','bike',2),('B9','bike',3),('B10','bike',3),
+  ('C1','truck',2),('C2','truck',2),('C3','truck',2),('C4','truck',2),
+  ('C5','truck',3),('C6','truck',3),('C7','truck',3),('C8','truck',3);
 
-INSERT INTO vehicles (owner_name, license_plate, vehicle_type, contact) VALUES
-  ('Arjun Kumar',  'KA01AB1234', 'car',   '9876543210'),
-  ('Priya Sharma', 'KA02CD5678', 'bike',  '9123456789'),
-  ('Ravi Verma',   'KA03EF9012', 'truck', '9988776655');
+
 """)
     conn.commit()
     conn.close()
