@@ -14,11 +14,12 @@
       <span></span><span></span><span></span>
     </button>
     <div id="nav-menu">
-      <a href="/">Dashboard</a>
+      <a href="/admin">Dashboard</a>
       <a href="/slots">Slots</a>
-      <a href="/book">Book Slot</a>
-      <a href="/active">Active</a>
-      <a href="/logs">Logs</a>
+      <a href="/admin/active">Active</a>
+      <a href="/admin/logs">Logs</a>
+      <a href="/admin/scanner">Scanner</a>
+      <a href="/admin/logout">Logout</a>
     </div>
   </nav>
 
@@ -80,7 +81,7 @@
               <td><span class="td-dim">Floor {{ b.floor }}</span></td>
               <td><span class="td-dim">{{ b.entry_time }}</span></td>
               <td>
-                <form method="POST" action="/release/{{ b.booking_id }}"
+                <form method="POST" action="/admin/release/{{ b.booking_id }}"
                       onsubmit="return confirm('Release slot for {{ b.license_plate }}?\nFee will be calculated at Rs.50/hr.')">
                   <button type="submit" class="btn-release">&#10003; Release</button>
                 </form>

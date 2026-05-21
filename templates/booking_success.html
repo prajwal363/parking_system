@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkEase — Booking Confirmed</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
+</head>
+<body>
+  <nav>
+    <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div id="nav-menu">
+      <a href="/">Home</a>
+      <a href="/slots">View Slots</a>
+      <a href="/book">Book Slot</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="page-header">
+      <h1>Booking Confirmed!</h1>
+      <p>Save your QR code — you will need it when leaving</p>
+    </div>
+
+    <div class="success-layout">
+      <div class="qr-card">
+        <div class="qr-header">
+          <span class="badge badge-avail">Booking #{{ booking_id }}</span>
+        </div>
+        <div class="qr-wrap">
+          <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code for booking {{ booking_id }}" class="qr-img">
+        </div>
+        <p class="qr-hint">Screenshot this QR code and show it to the admin when you leave</p>
+        <a href="{{ url_for('book') }}" class="btn" style="margin-top:16px; display:block; text-align:center;">Book Another Slot</a>
+      </div>
+
+      <div class="booking-details">
+        <div class="section-card">
+          <div class="section-card-header"><h2>Booking Details</h2></div>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-label">Booking ID</span>
+              <span class="info-val">#{{ booking_id }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Owner</span>
+              <span class="info-val">{{ owner_name }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">License Plate</span>
+              <span class="td-mono">{{ license_plate }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Slot</span>
+              <span class="info-val green-text">{{ slot_number }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Rate</span>
+              <span class="info-val">Rs.50 / hour</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script defer src="{{ url_for('static', filename='nav.js') }}?v=4"></script>
+</body>
+</html>

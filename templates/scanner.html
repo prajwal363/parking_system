@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkEase — QR Scanner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
+  <script defer src="{{ url_for('static', filename='nav.js') }}?v=4"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <nav>
+    <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div id="nav-menu">
+      <a href="/admin">Dashboard</a>
+      <a href="/admin/active">Active</a>
+      <a href="/admin/logs">Logs</a>
+      <a href="/slots">Slots</a>
+      <a href="/admin/scanner">Scanner</a>
+      <a href="/admin/logout">Logout</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="page-header">
+      <h1>QR Scanner</h1>
+      <p>Scan a user's QR code to release their slot and calculate fee</p>
+    </div>
+
+    <div class="scanner-layout">
+      <div class="scanner-box section-card">
+        <div class="section-card-header">
+          <h2>Camera Scanner</h2>
+          <p>Point at user's QR code</p>
+        </div>
+        <div id="qr-reader" style="width:100%;"></div>
+        <div style="padding:16px; text-align:center;">
+          <button id="start-btn" class="btn" onclick="startScan()">Start Scanner</button>
+          <button id="stop-btn" class="btn btn-outline" onclick="stopScan()" style="display:none;">Stop</button>
+        </div>
+      </div>
+
+      <div class="scanner-result" id="result-panel" style="display:none;">
+        <div class="section-card">
+          <div class="section-card-header">
+            <h2 id="result-title">Scan Result</h2>
+          </div>
+          <div id="result-success" style="display:none;">
+            <div class="info-rows">
+              <div class="info-row"><span class="info-label">Booking ID</span><span class="info-val" id="r-booking"></span></div>
+              <div class="info-row"><span class="info-label">Owner</span><span class="info-val" id="r-owner"></span></div>
+              <div class="info-row"><span class="info-label">License Plate</span><span class="td-mono" id="r-plate"></span></div>
+              <div class="info-row"><span class="info-label">Slot</span><span class="info-val green-text" id="r-slot"></span></div>
+              <div class="info-row"><span class="info-label">Duration</span><span class="info-val" id="r-hours"></span></div>
+              <div class="info-row"><span class="info-label">Fee Charged</span><span class="info-val amber-text" id="r-fee"></span></div>
+            </div>
+            <div style="padding:16px;">
+              <div class="alert success">Slot released successfully! &#10003;</div>
+            </div>
+          </div>
+          <div id="result-error" style="display:none; padding:16px;">
+            <div class="alert error" id="r-error-msg"></div>
+          </div>
+          <div style="padding:0 16px 16px;">
+            <button class="btn btn-outline" onclick="resetScanner()" style="width:100%;">Scan Another</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    var scanner = null;
+    var scanning = false;
+
+    function startScan() {
+      document.getElementById('start-btn').style.display = 'none';
+      document.getElementById('stop-btn').style.display = 'inline-flex';
+      document.getElementById('result-panel').style.display = 'none';
+
+      scanner = new Html5Qrcode('qr-reader');
+      scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess,
+        function(err) {}
+      ).catch(function(err) {
+        alert('Camera error: ' + err + '\nTry entering booking ID manually below.');
+      });
+      scanning = true;
+    }
+
+    function stopScan() {
+      if (scanner && scanning) {
+        scanner.stop().then(function() {
+          scanner.clear();
+          scanning = false;
+          document.getElementById('start-btn').style.display = 'inline-flex';
+          document.getElementById('stop-btn').style.display = 'none';
+        });
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      if (!decodedText.startsWith('PARKEASE|')) {
+        return;
+      }
+      stopScan();
+      releaseByQR(decodedText);
+    }
+
+    function releaseByQR(qrData) {
+      var form = new FormData();
+      form.append('qr_data', qrData);
+      fetch('/admin/scan_release', { method: 'POST', body: form })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          document.getElementById('result-panel').style.display = 'block';
+          if (data.success) {
+            document.getElementById('result-success').style.display = 'block';
+            document.getElementById('result-error').style.display   = 'none';
+            document.getElementById('r-booking').textContent = '#' + data.booking_id;
+            document.getElementById('r-owner').textContent   = data.owner_name;
+            document.getElementById('r-plate').textContent   = data.license_plate;
+            document.getElementById('r-slot').textContent    = data.slot_number;
+            document.getElementById('r-hours').textContent   = data.hours + ' hrs';
+            document.getElementById('r-fee').textContent     = 'Rs.' + data.fee;
+          } else {
+            document.getElementById('result-success').style.display = 'none';
+            document.getElementById('result-error').style.display   = 'block';
+            document.getElementById('r-error-msg').textContent      = data.message;
+          }
+        });
+    }
+
+    function resetScanner() {
+      document.getElementById('result-panel').style.display = 'none';
+      document.getElementById('result-success').style.display = 'none';
+      document.getElementById('result-error').style.display   = 'none';
+      document.getElementById('start-btn').style.display = 'inline-flex';
+      document.getElementById('stop-btn').style.display  = 'none';
+    }
+
+    // Manual entry fallback
+    function manualRelease() {
+      var bid = document.getElementById('manual-id').value.trim();
+      if (!bid) return;
+      releaseByQR('PARKEASE|' + bid);
+    }
+  </script>
+
+  <div style="max-width:400px; margin:24px auto 0; padding:0 24px;">
+    <div class="section-card">
+      <div class="section-card-header"><h2>Manual Entry</h2><p>If camera unavailable</p></div>
+      <div style="padding:16px; display:flex; gap:10px;">
+        <input type="number" id="manual-id" placeholder="Enter Booking ID" style="flex:1; padding:10px 12px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:0.9rem; outline:none;">
+        <button class="btn" onclick="manualRelease()">Release</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

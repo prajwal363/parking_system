@@ -517,3 +517,22 @@ select option { background: var(--bg3); color: var(--text); }
   .table-wrap { overflow-x: auto; }
   .dash-bottom { grid-template-columns: 1fr; }
 }
+
+/* ── Success / QR page ── */
+.success-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+@media(max-width:680px){ .success-layout { grid-template-columns:1fr; } }
+.qr-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:28px; text-align:center; }
+.qr-header { margin-bottom:20px; }
+.qr-wrap { background:#fff; border-radius:var(--radius-sm); padding:16px; display:inline-block; margin:8px 0; }
+.qr-img { width:200px; height:200px; display:block; }
+.qr-hint { font-size:0.8rem; color:var(--text-dim); margin-top:12px; line-height:1.5; }
+.booking-details
+.green-text { color:var(--green) !important; }
+.amber-text  { color:var(--amber) !important; }
+
+/* ── Scanner page ── */
+.scanner-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+@media(max-width:680px){ .scanner-layout { grid-template-columns:1fr; } }
+.scanner-box
+#qr-reader { border-radius:0 !important; overflow:hidden; }
+#qr-reader video { border-radius:0 !important; }

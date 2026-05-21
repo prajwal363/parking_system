@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkEase — Book a Slot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
+  <script defer src="{{ url_for('static', filename='nav.js') }}?v=4"></script>
+</head>
+<body>
+  <nav>
+    <span class="logo"><span class="logo-icon">P</span> ParkEase</span>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div id="nav-menu">
+      <a href="/">Home</a>
+      <a href="/slots">View Slots</a>
+      <a href="/book">Book Slot</a>
+    </div>
+  </nav>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+
+    <div class="page-header">
+      <h1>Welcome to ParkEase</h1>
+      <p>Find and book a parking slot instantly</p>
+    </div>
+
+    <div class="cards" style="grid-template-columns: repeat(3,1fr);">
+      <div class="card">
+        <div class="card-icon">&#127358;</div>
+        <p class="label">Total Slots</p>
+        <p class="value"><span class="num">{{ total_slots }}</span></p>
+        <p class="card-sub">parking spaces</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#9989;</div>
+        <p class="label">Available</p>
+        <p class="value green"><span class="num">{{ available }}</span></p>
+        <p class="card-sub">slots free now</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">&#128663;</div>
+        <p class="label">Occupied</p>
+        <p class="value blue"><span class="num">{{ active_book }}</span></p>
+        <p class="card-sub">vehicles parked</p>
+      </div>
+    </div>
+
+    <div class="quick-links" style="margin-top:8px;">
+      <a href="/book" class="btn">&#43; Book a Slot</a>
+      <a href="/slots" class="btn btn-outline">View All Slots</a>
+    </div>
+
+    <div class="section-card" style="margin-top:32px; max-width:480px;">
+      <div class="section-card-header"><h2>How it works</h2></div>
+      <div class="info-rows">
+        <div class="info-row"><span class="info-label">1. Choose a slot</span><span class="info-val">Pick by type</span></div>
+        <div class="info-row"><span class="info-label">2. Fill your details</span><span class="info-val">Name + plate</span></div>
+        <div class="info-row"><span class="info-label">3. Get your QR code</span><span class="info-val">Save it</span></div>
+        <div class="info-row"><span class="info-label">4. Show QR when leaving</span><span class="info-val">Admin scans it</span></div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
