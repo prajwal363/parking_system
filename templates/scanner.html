@@ -6,7 +6,6 @@
   <title>ParkEase — QR Scanner</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
   <script defer src="{{ url_for('static', filename='nav.js') }}?v=4"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
   <nav>
@@ -27,139 +26,220 @@
   <main>
     <div class="page-header">
       <h1>QR Scanner</h1>
-      <p>Scan a user's QR code to release their slot and calculate fee</p>
+      <p>Scan user QR or enter booking ID manually</p>
     </div>
 
-    <div class="scanner-layout">
-      <div class="scanner-box section-card">
+    <!-- RESULT PANEL -->
+    <div id="result-panel" style="display:none; margin-bottom:20px;">
+      <div class="section-card">
         <div class="section-card-header">
-          <h2>Camera Scanner</h2>
-          <p>Point at user's QR code</p>
+          <h2>Release Result</h2>
         </div>
-        <div id="qr-reader" style="width:100%;"></div>
-        <div style="padding:16px; text-align:center;">
-          <button id="start-btn" class="btn" onclick="startScan()">Start Scanner</button>
-          <button id="stop-btn" class="btn btn-outline" onclick="stopScan()" style="display:none;">Stop</button>
+        <div id="result-success" style="display:none;">
+          <div class="info-rows">
+            <div class="info-row"><span class="info-label">Booking ID</span><span class="info-val" id="r-booking"></span></div>
+            <div class="info-row"><span class="info-label">Owner</span><span class="info-val" id="r-owner"></span></div>
+            <div class="info-row"><span class="info-label">License Plate</span><span class="td-mono" id="r-plate"></span></div>
+            <div class="info-row"><span class="info-label">Slot</span><span class="info-val green-text" id="r-slot"></span></div>
+            <div class="info-row"><span class="info-label">Duration</span><span class="info-val" id="r-hours"></span></div>
+            <div class="info-row"><span class="info-label">Fee Charged</span><span class="info-val amber-text" id="r-fee"></span></div>
+          </div>
+          <div style="padding:16px;">
+            <div class="alert success">&#10003; Slot released successfully!</div>
+          </div>
         </div>
-      </div>
-
-      <div class="scanner-result" id="result-panel" style="display:none;">
-        <div class="section-card">
-          <div class="section-card-header">
-            <h2 id="result-title">Scan Result</h2>
-          </div>
-          <div id="result-success" style="display:none;">
-            <div class="info-rows">
-              <div class="info-row"><span class="info-label">Booking ID</span><span class="info-val" id="r-booking"></span></div>
-              <div class="info-row"><span class="info-label">Owner</span><span class="info-val" id="r-owner"></span></div>
-              <div class="info-row"><span class="info-label">License Plate</span><span class="td-mono" id="r-plate"></span></div>
-              <div class="info-row"><span class="info-label">Slot</span><span class="info-val green-text" id="r-slot"></span></div>
-              <div class="info-row"><span class="info-label">Duration</span><span class="info-val" id="r-hours"></span></div>
-              <div class="info-row"><span class="info-label">Fee Charged</span><span class="info-val amber-text" id="r-fee"></span></div>
-            </div>
-            <div style="padding:16px;">
-              <div class="alert success">Slot released successfully! &#10003;</div>
-            </div>
-          </div>
-          <div id="result-error" style="display:none; padding:16px;">
-            <div class="alert error" id="r-error-msg"></div>
-          </div>
-          <div style="padding:0 16px 16px;">
-            <button class="btn btn-outline" onclick="resetScanner()" style="width:100%;">Scan Another</button>
-          </div>
+        <div id="result-error" style="display:none; padding:16px;">
+          <div class="alert error" id="r-error-msg"></div>
+        </div>
+        <div style="padding:0 16px 16px;">
+          <button class="btn btn-outline" onclick="resetAll()" style="width:100%;">
+            &#8635; Scan Another
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- METHOD 1: PHONE CAMERA via file input -->
+    <div class="section-card" style="margin-bottom:16px;" id="camera-card">
+      <div class="section-card-header">
+        <h2>&#128247; Scan with Phone Camera</h2>
+        <p>Opens your phone camera directly</p>
+      </div>
+      <div style="padding:24px; text-align:center;">
+        <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:20px;">
+          Tap the button below — your phone camera opens.<br>
+          Point it at the user's QR code to capture.
+        </p>
+
+        <!-- This input opens native phone camera — no library needed -->
+        <label for="qr-photo" class="btn" style="display:inline-block; cursor:pointer;">
+          &#128247; Open Camera to Scan QR
+        </label>
+        <input type="file"
+               id="qr-photo"
+               accept="image/*"
+               capture="environment"
+               style="display:none;"
+               onchange="readQRFromPhoto(this)">
+
+        <p style="color:var(--text-dimmer); font-size:0.75rem; margin-top:16px;">
+          Works on all Android and iPhone browsers — no app needed
+        </p>
+      </div>
+
+      <!-- Hidden canvas to decode QR -->
+      <canvas id="qr-canvas" style="display:none;"></canvas>
+      <div id="decode-status" style="padding:0 24px 16px; text-align:center; display:none;">
+        <span style="color:var(--text-dim); font-size:0.85rem;">&#9203; Reading QR code...</span>
+      </div>
+    </div>
+
+    <!-- METHOD 2: MANUAL ENTRY — always visible as backup -->
+    <div class="section-card" id="manual-card">
+      <div class="section-card-header">
+        <h2>&#9997; Manual Entry</h2>
+        <p>Type booking ID if camera not working</p>
+      </div>
+      <div style="padding:20px;">
+        <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px;">
+          Ask user to show Booking ID from their confirmation page
+        </p>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="number"
+                 id="manual-id"
+                 placeholder="Enter Booking ID e.g. 5"
+                 style="flex:1; padding:12px 14px; background:var(--bg3);
+                        border:1px solid var(--border); border-radius:var(--radius-sm);
+                        color:var(--text); font-size:1rem; outline:none;
+                        border-color: var(--accent);">
+          <button class="btn" onclick="manualRelease()" style="white-space:nowrap;">
+            Release Slot
+          </button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
+  <!-- jsQR library — decodes QR from image, no camera permission popup -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+
   <script>
-    var scanner = null;
-    var scanning = false;
+    // Read QR from photo taken by phone camera
+    function readQRFromPhoto(input) {
+      if (!input.files || !input.files[0]) return;
 
-    function startScan() {
-      document.getElementById('start-btn').style.display = 'none';
-      document.getElementById('stop-btn').style.display = 'inline-flex';
-      document.getElementById('result-panel').style.display = 'none';
+      var statusEl = document.getElementById('decode-status');
+      statusEl.style.display = 'block';
 
-      scanner = new Html5Qrcode('qr-reader');
-      scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        onScanSuccess,
-        function(err) {}
-      ).catch(function(err) {
-        alert('Camera error: ' + err + '\nTry entering booking ID manually below.');
-      });
-      scanning = true;
+      var file = input.files[0];
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          var canvas = document.getElementById('qr-canvas');
+          canvas.width  = img.width;
+          canvas.height = img.height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var code = jsQR(imageData.data, imageData.width, imageData.height);
+
+          statusEl.style.display = 'none';
+
+          if (code) {
+            if (code.data.startsWith('PARKEASE|')) {
+              releaseByQR(code.data);
+            } else {
+              showError('QR code not recognised. Make sure it is a ParkEase QR.');
+            }
+          } else {
+            showError('Could not read QR code. Try better lighting or use Manual Entry below.');
+          }
+
+          // Reset input so same photo can be retried
+          input.value = '';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
-    function stopScan() {
-      if (scanner && scanning) {
-        scanner.stop().then(function() {
-          scanner.clear();
-          scanning = false;
-          document.getElementById('start-btn').style.display = 'inline-flex';
-          document.getElementById('stop-btn').style.display = 'none';
-        });
-      }
-    }
-
-    function onScanSuccess(decodedText) {
-      if (!decodedText.startsWith('PARKEASE|')) {
-        return;
-      }
-      stopScan();
-      releaseByQR(decodedText);
-    }
-
+    // Send QR data to server
     function releaseByQR(qrData) {
       var form = new FormData();
       form.append('qr_data', qrData);
+
       fetch('/admin/scan_release', { method: 'POST', body: form })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-          document.getElementById('result-panel').style.display = 'block';
-          if (data.success) {
-            document.getElementById('result-success').style.display = 'block';
-            document.getElementById('result-error').style.display   = 'none';
-            document.getElementById('r-booking').textContent = '#' + data.booking_id;
-            document.getElementById('r-owner').textContent   = data.owner_name;
-            document.getElementById('r-plate').textContent   = data.license_plate;
-            document.getElementById('r-slot').textContent    = data.slot_number;
-            document.getElementById('r-hours').textContent   = data.hours + ' hrs';
-            document.getElementById('r-fee').textContent     = 'Rs.' + data.fee;
-          } else {
-            document.getElementById('result-success').style.display = 'none';
-            document.getElementById('result-error').style.display   = 'block';
-            document.getElementById('r-error-msg').textContent      = data.message;
-          }
+          showResult(data);
+        })
+        .catch(function(err) {
+          showError('Server error: ' + err);
         });
     }
 
-    function resetScanner() {
-      document.getElementById('result-panel').style.display = 'none';
-      document.getElementById('result-success').style.display = 'none';
-      document.getElementById('result-error').style.display   = 'none';
-      document.getElementById('start-btn').style.display = 'inline-flex';
-      document.getElementById('stop-btn').style.display  = 'none';
-    }
-
-    // Manual entry fallback
+    // Manual entry
     function manualRelease() {
       var bid = document.getElementById('manual-id').value.trim();
-      if (!bid) return;
+      if (!bid) {
+        alert('Please enter a Booking ID');
+        return;
+      }
       releaseByQR('PARKEASE|' + bid);
     }
+
+    // Show success result
+    function showResult(data) {
+      var panel = document.getElementById('result-panel');
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth' });
+
+      if (data.success) {
+        document.getElementById('result-success').style.display = 'block';
+        document.getElementById('result-error').style.display   = 'none';
+        document.getElementById('r-booking').textContent = '#' + data.booking_id;
+        document.getElementById('r-owner').textContent   = data.owner_name;
+        document.getElementById('r-plate').textContent   = data.license_plate;
+        document.getElementById('r-slot').textContent    = data.slot_number;
+        document.getElementById('r-hours').textContent   = data.hours + ' hrs';
+        document.getElementById('r-fee').textContent     = 'Rs.' + data.fee;
+      } else {
+        document.getElementById('result-success').style.display = 'none';
+        document.getElementById('result-error').style.display   = 'block';
+        document.getElementById('r-error-msg').textContent      = data.message;
+      }
+    }
+
+    // Show error
+    function showError(msg) {
+      var panel = document.getElementById('result-panel');
+      panel.style.display = 'block';
+      document.getElementById('result-success').style.display = 'none';
+      document.getElementById('result-error').style.display   = 'block';
+      document.getElementById('r-error-msg').textContent      = msg;
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Reset everything
+    function resetAll() {
+      document.getElementById('result-panel').style.display   = 'none';
+      document.getElementById('result-success').style.display = 'none';
+      document.getElementById('result-error').style.display   = 'none';
+      document.getElementById('manual-id').value = '';
+    }
+
+    // Allow pressing Enter on manual input
+    document.addEventListener('DOMContentLoaded', function() {
+      var inp = document.getElementById('manual-id');
+      if (inp) {
+        inp.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') manualRelease();
+        });
+      }
+    });
   </script>
 
-  <div style="max-width:400px; margin:24px auto 0; padding:0 24px;">
-    <div class="section-card">
-      <div class="section-card-header"><h2>Manual Entry</h2><p>If camera unavailable</p></div>
-      <div style="padding:16px; display:flex; gap:10px;">
-        <input type="number" id="manual-id" placeholder="Enter Booking ID" style="flex:1; padding:10px 12px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:0.9rem; outline:none;">
-        <button class="btn" onclick="manualRelease()">Release</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
