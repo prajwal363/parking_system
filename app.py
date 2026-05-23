@@ -234,6 +234,11 @@ def release(booking_id):
 def scanner():
     return render_template('scanner.html')
 
+@app.route('/admin/download-db')
+@admin_required
+def download_db():
+    return send_file(DB, as_attachment=True, download_name='parking.db')
+
 @app.route('/admin/scan_release', methods=['POST'])
 @admin_required
 def scan_release():
