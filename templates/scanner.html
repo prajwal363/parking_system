@@ -6,7 +6,6 @@
   <title>ParkEase — QR Scanner</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
   <script defer src="{{ url_for('static', filename='nav.js') }}?v=4"></script>
-  <!-- jsQR: decodes QR from video frames, works on both mobile and desktop -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
   <style>
     .scanner-wrap {
@@ -17,12 +16,12 @@
       background: #000;
       border-radius: var(--radius-sm);
       overflow: hidden;
-      aspect-ratio: 1/1;
     }
     #preview {
-      width: 100%; height: 100%;
-      object-fit: cover;
+      width: 100%;
       display: block;
+      max-height: 420px;
+      object-fit: cover;
     }
     .scan-overlay {
       position: absolute;
@@ -33,52 +32,51 @@
       pointer-events: none;
     }
     .scan-box {
-      width: 65%; height: 65%;
+      width: 62%;
+      aspect-ratio: 1/1;
       border: 2px solid var(--accent);
-      border-radius: 12px;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+      border-radius: 10px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
       position: relative;
     }
-    /* Corner marks */
     .scan-box::before, .scan-box::after,
     .scan-box span::before, .scan-box span::after {
       content: '';
       position: absolute;
-      width: 20px; height: 20px;
+      width: 22px; height: 22px;
       border-color: #fff;
       border-style: solid;
     }
-    .scan-box::before  { top:-2px;    left:-2px;   border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-    .scan-box::after   { top:-2px;    right:-2px;  border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-    .scan-box span::before { bottom:-2px; left:-2px;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-    .scan-box span::after  { bottom:-2px; right:-2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
-    /* Scan line animation */
+    .scan-box::before  { top:-2px; left:-2px;   border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+    .scan-box::after   { top:-2px; right:-2px;  border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+    .scan-box span::before { bottom:-2px; left:-2px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+    .scan-box span::after  { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
     .scan-line {
       position: absolute;
-      left: 4px; right: 4px;
+      left: 6px; right: 6px;
       height: 2px;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      animation: scanMove 2s linear infinite;
-      border-radius: 2px;
+      animation: scanMove 1.8s ease-in-out infinite;
     }
     @keyframes scanMove {
-      0%   { top: 8%; }
+      0%   { top: 6%; }
       50%  { top: 88%; }
-      100% { top: 8%; }
+      100% { top: 6%; }
     }
     .scan-hint {
       position: absolute;
-      bottom: 12px; left: 0; right: 0;
+      bottom: 10px; left: 0; right: 0;
       text-align: center;
       font-size: 0.78rem;
-      color: rgba(255,255,255,0.7);
+      color: rgba(255,255,255,0.8);
+      background: rgba(0,0,0,0.4);
+      padding: 4px 0;
     }
     #scan-status {
       text-align: center;
-      padding: 10px 16px;
-      font-size: 0.82rem;
-      color: var(--text-dim);
-      min-height: 36px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      min-height: 40px;
     }
     .scanner-btns {
       display: flex;
@@ -86,7 +84,7 @@
       padding: 0 16px 16px;
       justify-content: center;
     }
-    canvas#qr-canvas { display: none; }
+    #qr-canvas { display: none; }
   </style>
 </head>
 <body>
@@ -114,35 +112,15 @@
     <!-- RESULT PANEL -->
     <div id="result-panel" style="display:none; margin-bottom:20px;">
       <div class="section-card">
-        <div class="section-card-header">
-          <h2>&#10003; Scan Result</h2>
-        </div>
+        <div class="section-card-header"><h2>&#10003; Release Result</h2></div>
         <div id="result-success" style="display:none;">
           <div class="info-rows">
-            <div class="info-row">
-              <span class="info-label">Booking ID</span>
-              <span class="info-val" id="r-booking"></span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Owner</span>
-              <span class="info-val" id="r-owner"></span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">License Plate</span>
-              <span class="td-mono" id="r-plate"></span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Slot</span>
-              <span class="info-val green-text" id="r-slot"></span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Duration</span>
-              <span class="info-val" id="r-hours"></span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Fee Charged</span>
-              <span class="info-val amber-text" id="r-fee"></span>
-            </div>
+            <div class="info-row"><span class="info-label">Booking ID</span><span class="info-val" id="r-booking"></span></div>
+            <div class="info-row"><span class="info-label">Owner</span><span class="info-val" id="r-owner"></span></div>
+            <div class="info-row"><span class="info-label">License Plate</span><span class="td-mono" id="r-plate"></span></div>
+            <div class="info-row"><span class="info-label">Slot</span><span class="info-val green-text" id="r-slot"></span></div>
+            <div class="info-row"><span class="info-label">Duration</span><span class="info-val" id="r-hours"></span></div>
+            <div class="info-row"><span class="info-label">Fee Charged</span><span class="info-val amber-text" id="r-fee"></span></div>
           </div>
           <div style="padding:16px;">
             <div class="alert success">Slot released successfully! &#10003;</div>
@@ -159,15 +137,14 @@
       </div>
     </div>
 
-    <!-- SCANNER -->
+    <!-- CAMERA SCANNER -->
     <div class="section-card" id="scanner-card">
       <div class="section-card-header">
         <h2>&#128247; Camera Scanner</h2>
-        <p id="device-hint">Auto-detects mobile or desktop camera</p>
+        <p id="device-hint">Loading...</p>
       </div>
 
-      <!-- Video preview -->
-      <div style="padding:16px 16px 8px;">
+      <div style="padding:16px 16px 0;">
         <div class="scanner-wrap" id="scanner-wrap" style="display:none;">
           <video id="preview" autoplay muted playsinline></video>
           <div class="scan-overlay">
@@ -176,12 +153,14 @@
               <div class="scan-line"></div>
             </div>
           </div>
-          <div class="scan-hint">Point at QR code</div>
+          <div class="scan-hint">Align QR code inside the box</div>
         </div>
         <canvas id="qr-canvas"></canvas>
       </div>
 
-      <div id="scan-status">Press Start to open camera</div>
+      <div id="scan-status" style="color:var(--text-dim);">
+        Press Start Scanner to begin
+      </div>
 
       <div class="scanner-btns">
         <button id="start-btn" class="btn" onclick="startScan()">
@@ -197,12 +176,12 @@
     <div class="section-card" style="margin-top:16px;">
       <div class="section-card-header">
         <h2>Manual Entry</h2>
-        <p>If camera unavailable</p>
+        <p>Type booking ID if camera not available</p>
       </div>
       <div style="padding:16px; display:flex; gap:10px;">
         <input type="number"
                id="manual-id"
-               placeholder="Enter Booking ID"
+               placeholder="Enter Booking ID e.g. 5"
                style="flex:1; padding:11px 14px; background:var(--bg3);
                       border:1px solid var(--accent); border-radius:var(--radius-sm);
                       color:var(--text); font-size:0.9rem; outline:none;">
@@ -212,42 +191,49 @@
   </main>
 
   <script>
-    var stream     = null;
-    var scanning   = false;
-    var rafId      = null;
-    var isMobile   = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var stream   = null;
+    var scanning = false;
+    var rafId    = null;
+    var lastCode = '';
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // Show device hint
     document.getElementById('device-hint').textContent =
-      isMobile ? 'Using back camera on your phone' : 'Using webcam on your computer';
+      isMobile
+        ? 'Using back camera on your phone'
+        : 'Using webcam on your computer';
 
     function startScan() {
       document.getElementById('start-btn').style.display = 'none';
       document.getElementById('stop-btn').style.display  = 'inline-flex';
-      document.getElementById('scan-status').textContent = 'Opening camera...';
       document.getElementById('scanner-wrap').style.display = 'block';
+      setStatus('Opening camera...', 'dim');
 
-      // Mobile = back camera, Desktop = any camera (usually webcam)
-      var constraints = isMobile
-        ? { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } } }
-        : { video: { width: { ideal: 1280 }, height: { ideal: 720 } } };
+      // Try back camera on mobile first, fallback to any camera
+      var tryBack = isMobile
+        ? navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { exact: 'environment' } }
+          })
+        : Promise.reject('desktop');
 
-      navigator.mediaDevices.getUserMedia(constraints)
+      tryBack
         .catch(function() {
-          // fallback: try without exact constraint
-          return navigator.mediaDevices.getUserMedia({ video: true });
+          // fallback — any camera (front cam on mobile or webcam on desktop)
+          return navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
         })
         .then(function(s) {
           stream = s;
           var video = document.getElementById('preview');
           video.srcObject = stream;
-          video.play();
+          return video.play();
+        })
+        .then(function() {
           scanning = true;
-          document.getElementById('scan-status').textContent = 'Scanning... point at QR code';
-          requestAnimationFrame(tick);
+          lastCode = '';
+          setStatus('Scanning... align QR inside the box', 'dim');
+          rafId = requestAnimationFrame(tick);
         })
         .catch(function(err) {
-          document.getElementById('scan-status').textContent = 'Camera error: ' + err.message;
+          setStatus('Camera error: ' + (err.message || err), 'red');
           document.getElementById('scanner-wrap').style.display = 'none';
           document.getElementById('start-btn').style.display  = 'inline-flex';
           document.getElementById('stop-btn').style.display   = 'none';
@@ -256,79 +242,103 @@
 
     function tick() {
       if (!scanning) return;
+
       var video  = document.getElementById('preview');
       var canvas = document.getElementById('qr-canvas');
+      var ctx    = canvas.getContext('2d');
 
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (video.readyState >= 2) {
+        var vw = video.videoWidth  || 640;
+        var vh = video.videoHeight || 480;
+
+        canvas.width  = vw;
+        canvas.height = vh;
+        ctx.drawImage(video, 0, 0, vw, vh);
+
+        var imageData = ctx.getImageData(0, 0, vw, vh);
+
+        // Try normal first, then inverted
         var code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'dontInvert'
+          inversionAttempts: 'attemptBoth'
         });
 
-        if (code && code.data.startsWith('PARKEASE|')) {
-          // QR found!
-          stopScan();
-          document.getElementById('scan-status').textContent = 'QR found! Processing...';
-          releaseByQR(code.data);
-          return;
+        if (code && code.data) {
+          var decoded = code.data.trim();
+
+          // Debounce — only process if different from last scan
+          if (decoded !== lastCode) {
+            lastCode = decoded;
+            setStatus('QR detected: ' + decoded.substring(0, 30), 'green');
+
+            if (decoded.startsWith('PARKEASE|')) {
+              stopScan();
+              setStatus('QR found! Releasing slot...', 'green');
+              releaseByQR(decoded);
+              return;
+            } else {
+              // Not a ParkEase QR — keep scanning
+              setStatus('Not a ParkEase QR. Keep scanning...', 'dim');
+              setTimeout(function() { lastCode = ''; }, 2000);
+            }
+          }
         }
       }
+
       rafId = requestAnimationFrame(tick);
     }
 
     function stopScan() {
       scanning = false;
-      if (rafId) cancelAnimationFrame(rafId);
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       if (stream) {
         stream.getTracks().forEach(function(t) { t.stop(); });
         stream = null;
       }
-      document.getElementById('preview').srcObject = null;
+      var video = document.getElementById('preview');
+      if (video) video.srcObject = null;
       document.getElementById('scanner-wrap').style.display = 'none';
       document.getElementById('start-btn').style.display  = 'inline-flex';
       document.getElementById('stop-btn').style.display   = 'none';
-      document.getElementById('scan-status').textContent  = 'Press Start to open camera';
+      setStatus('Press Start Scanner to begin', 'dim');
     }
 
     function releaseByQR(qrData) {
       var form = new FormData();
       form.append('qr_data', qrData);
+
       fetch('/admin/scan_release', { method: 'POST', body: form })
         .then(function(r) { return r.json(); })
-        .then(function(data) {
-          document.getElementById('result-panel').style.display = 'block';
-          document.getElementById('result-panel').scrollIntoView({ behavior:'smooth' });
-          if (data.success) {
-            document.getElementById('result-success').style.display = 'block';
-            document.getElementById('result-error').style.display   = 'none';
-            document.getElementById('r-booking').textContent = '#' + data.booking_id;
-            document.getElementById('r-owner').textContent   = data.owner_name;
-            document.getElementById('r-plate').textContent   = data.license_plate;
-            document.getElementById('r-slot').textContent    = data.slot_number;
-            document.getElementById('r-hours').textContent   = data.hours + ' hrs';
-            document.getElementById('r-fee').textContent     = 'Rs.' + data.fee;
-          } else {
-            document.getElementById('result-success').style.display = 'none';
-            document.getElementById('result-error').style.display   = 'block';
-            document.getElementById('r-error-msg').textContent      = data.message;
-          }
-        })
+        .then(function(data) { showResult(data); })
         .catch(function(err) {
-          document.getElementById('result-panel').style.display = 'block';
-          document.getElementById('result-success').style.display = 'none';
-          document.getElementById('result-error').style.display   = 'block';
-          document.getElementById('r-error-msg').textContent      = 'Server error: ' + err;
+          showResult({ success: false, message: 'Server error: ' + err });
         });
     }
 
     function manualRelease() {
       var bid = document.getElementById('manual-id').value.trim();
-      if (!bid) { alert('Enter a Booking ID'); return; }
+      if (!bid) { alert('Please enter a Booking ID'); return; }
       releaseByQR('PARKEASE|' + bid);
+    }
+
+    function showResult(data) {
+      var panel = document.getElementById('result-panel');
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth' });
+
+      if (data.success) {
+        document.getElementById('result-success').style.display = 'block';
+        document.getElementById('result-error').style.display   = 'none';
+        document.getElementById('r-booking').textContent = '#' + data.booking_id;
+        document.getElementById('r-owner').textContent   = data.owner_name;
+        document.getElementById('r-plate').textContent   = data.license_plate;
+        document.getElementById('r-slot').textContent    = data.slot_number;
+        document.getElementById('r-hours').textContent   = data.hours + ' hrs';
+        document.getElementById('r-fee').textContent     = 'Rs.' + data.fee;
+      } else {
+        document.getElementById('result-success').style.display = 'none';
+        document.getElementById('result-error').style.display   = 'block';
+        document.getElementById('r-error-msg').textContent      = data.message;
+      }
     }
 
     function resetScanner() {
@@ -336,10 +346,18 @@
       document.getElementById('result-success').style.display = 'none';
       document.getElementById('result-error').style.display   = 'none';
       document.getElementById('manual-id').value = '';
-      document.getElementById('scan-status').textContent = 'Press Start to open camera';
+      lastCode = '';
+      setStatus('Press Start Scanner to begin', 'dim');
     }
 
-    // Enter key on manual input
+    function setStatus(msg, type) {
+      var el = document.getElementById('scan-status');
+      el.textContent = msg;
+      el.style.color = type === 'green' ? 'var(--green)'
+                     : type === 'red'   ? 'var(--red)'
+                     : 'var(--text-dim)';
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('manual-id').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') manualRelease();
