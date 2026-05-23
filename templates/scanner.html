@@ -6,6 +6,88 @@
   <title>ParkEase — QR Scanner</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
   <script defer src="{{ url_for('static', filename='nav.js') }}?v=4"></script>
+  <!-- jsQR: decodes QR from video frames, works on both mobile and desktop -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+  <style>
+    .scanner-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      aspect-ratio: 1/1;
+    }
+    #preview {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .scan-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .scan-box {
+      width: 65%; height: 65%;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+      position: relative;
+    }
+    /* Corner marks */
+    .scan-box::before, .scan-box::after,
+    .scan-box span::before, .scan-box span::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      border-color: #fff;
+      border-style: solid;
+    }
+    .scan-box::before  { top:-2px;    left:-2px;   border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .scan-box::after   { top:-2px;    right:-2px;  border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .scan-box span::before { bottom:-2px; left:-2px;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .scan-box span::after  { bottom:-2px; right:-2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    /* Scan line animation */
+    .scan-line {
+      position: absolute;
+      left: 4px; right: 4px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scanMove 2s linear infinite;
+      border-radius: 2px;
+    }
+    @keyframes scanMove {
+      0%   { top: 8%; }
+      50%  { top: 88%; }
+      100% { top: 8%; }
+    }
+    .scan-hint {
+      position: absolute;
+      bottom: 12px; left: 0; right: 0;
+      text-align: center;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.7);
+    }
+    #scan-status {
+      text-align: center;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      min-height: 36px;
+    }
+    .scanner-btns {
+      display: flex;
+      gap: 10px;
+      padding: 0 16px 16px;
+      justify-content: center;
+    }
+    canvas#qr-canvas { display: none; }
+  </style>
 </head>
 <body>
   <nav>
@@ -26,218 +108,242 @@
   <main>
     <div class="page-header">
       <h1>QR Scanner</h1>
-      <p>Scan user QR or enter booking ID manually</p>
+      <p>Scan user's QR code to release slot and calculate fee</p>
     </div>
 
     <!-- RESULT PANEL -->
     <div id="result-panel" style="display:none; margin-bottom:20px;">
       <div class="section-card">
         <div class="section-card-header">
-          <h2>Release Result</h2>
+          <h2>&#10003; Scan Result</h2>
         </div>
         <div id="result-success" style="display:none;">
           <div class="info-rows">
-            <div class="info-row"><span class="info-label">Booking ID</span><span class="info-val" id="r-booking"></span></div>
-            <div class="info-row"><span class="info-label">Owner</span><span class="info-val" id="r-owner"></span></div>
-            <div class="info-row"><span class="info-label">License Plate</span><span class="td-mono" id="r-plate"></span></div>
-            <div class="info-row"><span class="info-label">Slot</span><span class="info-val green-text" id="r-slot"></span></div>
-            <div class="info-row"><span class="info-label">Duration</span><span class="info-val" id="r-hours"></span></div>
-            <div class="info-row"><span class="info-label">Fee Charged</span><span class="info-val amber-text" id="r-fee"></span></div>
+            <div class="info-row">
+              <span class="info-label">Booking ID</span>
+              <span class="info-val" id="r-booking"></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Owner</span>
+              <span class="info-val" id="r-owner"></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">License Plate</span>
+              <span class="td-mono" id="r-plate"></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Slot</span>
+              <span class="info-val green-text" id="r-slot"></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Duration</span>
+              <span class="info-val" id="r-hours"></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Fee Charged</span>
+              <span class="info-val amber-text" id="r-fee"></span>
+            </div>
           </div>
           <div style="padding:16px;">
-            <div class="alert success">&#10003; Slot released successfully!</div>
+            <div class="alert success">Slot released successfully! &#10003;</div>
           </div>
         </div>
         <div id="result-error" style="display:none; padding:16px;">
           <div class="alert error" id="r-error-msg"></div>
         </div>
         <div style="padding:0 16px 16px;">
-          <button class="btn btn-outline" onclick="resetAll()" style="width:100%;">
+          <button class="btn btn-outline" onclick="resetScanner()" style="width:100%;">
             &#8635; Scan Another
           </button>
         </div>
       </div>
     </div>
 
-    <!-- METHOD 1: PHONE CAMERA via file input -->
-    <div class="section-card" style="margin-bottom:16px;" id="camera-card">
+    <!-- SCANNER -->
+    <div class="section-card" id="scanner-card">
       <div class="section-card-header">
-        <h2>&#128247; Scan with Phone Camera</h2>
-        <p>Opens your phone camera directly</p>
-      </div>
-      <div style="padding:24px; text-align:center;">
-        <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:20px;">
-          Tap the button below — your phone camera opens.<br>
-          Point it at the user's QR code to capture.
-        </p>
-
-        <!-- This input opens native phone camera — no library needed -->
-        <label for="qr-photo" class="btn" style="display:inline-block; cursor:pointer;">
-          &#128247; Open Camera to Scan QR
-        </label>
-        <input type="file"
-               id="qr-photo"
-               accept="image/*"
-               capture="environment"
-               style="display:none;"
-               onchange="readQRFromPhoto(this)">
-
-        <p style="color:var(--text-dimmer); font-size:0.75rem; margin-top:16px;">
-          Works on all Android and iPhone browsers — no app needed
-        </p>
+        <h2>&#128247; Camera Scanner</h2>
+        <p id="device-hint">Auto-detects mobile or desktop camera</p>
       </div>
 
-      <!-- Hidden canvas to decode QR -->
-      <canvas id="qr-canvas" style="display:none;"></canvas>
-      <div id="decode-status" style="padding:0 24px 16px; text-align:center; display:none;">
-        <span style="color:var(--text-dim); font-size:0.85rem;">&#9203; Reading QR code...</span>
-      </div>
-    </div>
-
-    <!-- METHOD 2: MANUAL ENTRY — always visible as backup -->
-    <div class="section-card" id="manual-card">
-      <div class="section-card-header">
-        <h2>&#9997; Manual Entry</h2>
-        <p>Type booking ID if camera not working</p>
-      </div>
-      <div style="padding:20px;">
-        <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px;">
-          Ask user to show Booking ID from their confirmation page
-        </p>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <input type="number"
-                 id="manual-id"
-                 placeholder="Enter Booking ID e.g. 5"
-                 style="flex:1; padding:12px 14px; background:var(--bg3);
-                        border:1px solid var(--border); border-radius:var(--radius-sm);
-                        color:var(--text); font-size:1rem; outline:none;
-                        border-color: var(--accent);">
-          <button class="btn" onclick="manualRelease()" style="white-space:nowrap;">
-            Release Slot
-          </button>
+      <!-- Video preview -->
+      <div style="padding:16px 16px 8px;">
+        <div class="scanner-wrap" id="scanner-wrap" style="display:none;">
+          <video id="preview" autoplay muted playsinline></video>
+          <div class="scan-overlay">
+            <div class="scan-box">
+              <span></span>
+              <div class="scan-line"></div>
+            </div>
+          </div>
+          <div class="scan-hint">Point at QR code</div>
         </div>
+        <canvas id="qr-canvas"></canvas>
+      </div>
+
+      <div id="scan-status">Press Start to open camera</div>
+
+      <div class="scanner-btns">
+        <button id="start-btn" class="btn" onclick="startScan()">
+          &#9654; Start Scanner
+        </button>
+        <button id="stop-btn" class="btn btn-outline" onclick="stopScan()" style="display:none;">
+          &#9632; Stop
+        </button>
       </div>
     </div>
 
+    <!-- MANUAL ENTRY -->
+    <div class="section-card" style="margin-top:16px;">
+      <div class="section-card-header">
+        <h2>Manual Entry</h2>
+        <p>If camera unavailable</p>
+      </div>
+      <div style="padding:16px; display:flex; gap:10px;">
+        <input type="number"
+               id="manual-id"
+               placeholder="Enter Booking ID"
+               style="flex:1; padding:11px 14px; background:var(--bg3);
+                      border:1px solid var(--accent); border-radius:var(--radius-sm);
+                      color:var(--text); font-size:0.9rem; outline:none;">
+        <button class="btn" onclick="manualRelease()">Release</button>
+      </div>
+    </div>
   </main>
 
-  <!-- jsQR library — decodes QR from image, no camera permission popup -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
-
   <script>
-    // Read QR from photo taken by phone camera
-    function readQRFromPhoto(input) {
-      if (!input.files || !input.files[0]) return;
+    var stream     = null;
+    var scanning   = false;
+    var rafId      = null;
+    var isMobile   = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-      var statusEl = document.getElementById('decode-status');
-      statusEl.style.display = 'block';
+    // Show device hint
+    document.getElementById('device-hint').textContent =
+      isMobile ? 'Using back camera on your phone' : 'Using webcam on your computer';
 
-      var file = input.files[0];
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var img = new Image();
-        img.onload = function() {
-          var canvas = document.getElementById('qr-canvas');
-          canvas.width  = img.width;
-          canvas.height = img.height;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          var code = jsQR(imageData.data, imageData.width, imageData.height);
+    function startScan() {
+      document.getElementById('start-btn').style.display = 'none';
+      document.getElementById('stop-btn').style.display  = 'inline-flex';
+      document.getElementById('scan-status').textContent = 'Opening camera...';
+      document.getElementById('scanner-wrap').style.display = 'block';
 
-          statusEl.style.display = 'none';
+      // Mobile = back camera, Desktop = any camera (usually webcam)
+      var constraints = isMobile
+        ? { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } } }
+        : { video: { width: { ideal: 1280 }, height: { ideal: 720 } } };
 
-          if (code) {
-            if (code.data.startsWith('PARKEASE|')) {
-              releaseByQR(code.data);
-            } else {
-              showError('QR code not recognised. Make sure it is a ParkEase QR.');
-            }
-          } else {
-            showError('Could not read QR code. Try better lighting or use Manual Entry below.');
-          }
-
-          // Reset input so same photo can be retried
-          input.value = '';
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    // Send QR data to server
-    function releaseByQR(qrData) {
-      var form = new FormData();
-      form.append('qr_data', qrData);
-
-      fetch('/admin/scan_release', { method: 'POST', body: form })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          showResult(data);
+      navigator.mediaDevices.getUserMedia(constraints)
+        .catch(function() {
+          // fallback: try without exact constraint
+          return navigator.mediaDevices.getUserMedia({ video: true });
+        })
+        .then(function(s) {
+          stream = s;
+          var video = document.getElementById('preview');
+          video.srcObject = stream;
+          video.play();
+          scanning = true;
+          document.getElementById('scan-status').textContent = 'Scanning... point at QR code';
+          requestAnimationFrame(tick);
         })
         .catch(function(err) {
-          showError('Server error: ' + err);
+          document.getElementById('scan-status').textContent = 'Camera error: ' + err.message;
+          document.getElementById('scanner-wrap').style.display = 'none';
+          document.getElementById('start-btn').style.display  = 'inline-flex';
+          document.getElementById('stop-btn').style.display   = 'none';
         });
     }
 
-    // Manual entry
+    function tick() {
+      if (!scanning) return;
+      var video  = document.getElementById('preview');
+      var canvas = document.getElementById('qr-canvas');
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert'
+        });
+
+        if (code && code.data.startsWith('PARKEASE|')) {
+          // QR found!
+          stopScan();
+          document.getElementById('scan-status').textContent = 'QR found! Processing...';
+          releaseByQR(code.data);
+          return;
+        }
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function stopScan() {
+      scanning = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (stream) {
+        stream.getTracks().forEach(function(t) { t.stop(); });
+        stream = null;
+      }
+      document.getElementById('preview').srcObject = null;
+      document.getElementById('scanner-wrap').style.display = 'none';
+      document.getElementById('start-btn').style.display  = 'inline-flex';
+      document.getElementById('stop-btn').style.display   = 'none';
+      document.getElementById('scan-status').textContent  = 'Press Start to open camera';
+    }
+
+    function releaseByQR(qrData) {
+      var form = new FormData();
+      form.append('qr_data', qrData);
+      fetch('/admin/scan_release', { method: 'POST', body: form })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          document.getElementById('result-panel').style.display = 'block';
+          document.getElementById('result-panel').scrollIntoView({ behavior:'smooth' });
+          if (data.success) {
+            document.getElementById('result-success').style.display = 'block';
+            document.getElementById('result-error').style.display   = 'none';
+            document.getElementById('r-booking').textContent = '#' + data.booking_id;
+            document.getElementById('r-owner').textContent   = data.owner_name;
+            document.getElementById('r-plate').textContent   = data.license_plate;
+            document.getElementById('r-slot').textContent    = data.slot_number;
+            document.getElementById('r-hours').textContent   = data.hours + ' hrs';
+            document.getElementById('r-fee').textContent     = 'Rs.' + data.fee;
+          } else {
+            document.getElementById('result-success').style.display = 'none';
+            document.getElementById('result-error').style.display   = 'block';
+            document.getElementById('r-error-msg').textContent      = data.message;
+          }
+        })
+        .catch(function(err) {
+          document.getElementById('result-panel').style.display = 'block';
+          document.getElementById('result-success').style.display = 'none';
+          document.getElementById('result-error').style.display   = 'block';
+          document.getElementById('r-error-msg').textContent      = 'Server error: ' + err;
+        });
+    }
+
     function manualRelease() {
       var bid = document.getElementById('manual-id').value.trim();
-      if (!bid) {
-        alert('Please enter a Booking ID');
-        return;
-      }
+      if (!bid) { alert('Enter a Booking ID'); return; }
       releaseByQR('PARKEASE|' + bid);
     }
 
-    // Show success result
-    function showResult(data) {
-      var panel = document.getElementById('result-panel');
-      panel.style.display = 'block';
-      panel.scrollIntoView({ behavior: 'smooth' });
-
-      if (data.success) {
-        document.getElementById('result-success').style.display = 'block';
-        document.getElementById('result-error').style.display   = 'none';
-        document.getElementById('r-booking').textContent = '#' + data.booking_id;
-        document.getElementById('r-owner').textContent   = data.owner_name;
-        document.getElementById('r-plate').textContent   = data.license_plate;
-        document.getElementById('r-slot').textContent    = data.slot_number;
-        document.getElementById('r-hours').textContent   = data.hours + ' hrs';
-        document.getElementById('r-fee').textContent     = 'Rs.' + data.fee;
-      } else {
-        document.getElementById('result-success').style.display = 'none';
-        document.getElementById('result-error').style.display   = 'block';
-        document.getElementById('r-error-msg').textContent      = data.message;
-      }
-    }
-
-    // Show error
-    function showError(msg) {
-      var panel = document.getElementById('result-panel');
-      panel.style.display = 'block';
-      document.getElementById('result-success').style.display = 'none';
-      document.getElementById('result-error').style.display   = 'block';
-      document.getElementById('r-error-msg').textContent      = msg;
-      panel.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Reset everything
-    function resetAll() {
+    function resetScanner() {
       document.getElementById('result-panel').style.display   = 'none';
       document.getElementById('result-success').style.display = 'none';
       document.getElementById('result-error').style.display   = 'none';
       document.getElementById('manual-id').value = '';
+      document.getElementById('scan-status').textContent = 'Press Start to open camera';
     }
 
-    // Allow pressing Enter on manual input
+    // Enter key on manual input
     document.addEventListener('DOMContentLoaded', function() {
-      var inp = document.getElementById('manual-id');
-      if (inp) {
-        inp.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') manualRelease();
-        });
-      }
+      document.getElementById('manual-id').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') manualRelease();
+      });
     });
   </script>
 
